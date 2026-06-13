@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HiveLog — beekeeping hive inspection log & records (free, offline)</title>
+<meta name="description" content="A simple beekeeping app to log hive inspections: queen, brood, stores, varroa & treatments per hive, with inspection-due reminders and history. Works offline on your phone, private, free. Stop using paper and spreadsheets." />
+<link rel="canonical" href="https://alexeysamosadov.github.io/hivelog/" />
+<meta property="og:title" content="HiveLog — beekeeping hive inspection log" />
+<meta property="og:description" content="Log inspections per hive (queen, brood, stores, varroa, treatments), get inspection-due reminders, keep full history. Offline, private, free." />
+<meta property="og:type" content="website" />
+<style>
+  :root{ --bg:#1a160f; --surface:#241e14; --surface2:#2e2718; --line:#3c331f; --txt:#f4ecdb; --mut:#b7a785; --amber:#f0a93b; --amber2:#ffc864; --good:#8fd17a; --bad:#ff8f6b; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--txt);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  header{display:flex;align-items:center;gap:10px;padding:14px 18px;max-width:560px;margin:0 auto;position:sticky;top:0;background:var(--bg);z-index:10}
+  .logo{font-weight:800;letter-spacing:-.4px}.logo b{color:var(--amber)}
+  .grow{flex:1}
+  .pill{font-size:13px;color:var(--mut);border:1px solid var(--line);border-radius:99px;padding:6px 12px;cursor:pointer;background:var(--surface)}
+  .pill.pro{color:#1a160f;background:var(--amber);border-color:var(--amber);font-weight:700}
+  main{max-width:560px;margin:0 auto;padding:6px 18px 100px}
+  h1.hero{font-size:21px;margin:6px 0 2px}
+  .sub{color:var(--mut);font-size:14px;margin:0 0 16px}
+  button{font:inherit;color:var(--txt);background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px 16px;cursor:pointer}
+  button:hover{border-color:var(--amber)}
+  button.primary{background:var(--amber);color:#1a160f;border-color:var(--amber);font-weight:800}
+  .fab{position:fixed;right:18px;bottom:18px;z-index:20}
+  .fab button{box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:16px;padding:15px 20px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:11px;cursor:pointer;display:flex;align-items:center;gap:12px}
+  .card .ic{width:42px;height:42px;border-radius:12px;background:var(--surface2);display:grid;place-items:center;font-size:20px;flex:none}
+  .card .body{flex:1;min-width:0}
+  .card .name{font-weight:700;font-size:17px}
+  .card .meta{color:var(--mut);font-size:13px;margin-top:2px}
+  .due{font-size:12px;font-weight:700;border-radius:99px;padding:3px 9px}
+  .due.ok{color:var(--good);background:rgba(143,209,122,.12)}
+  .due.over{color:#1a160f;background:var(--bad)}
+  .empty{color:var(--mut);text-align:center;padding:34px 10px}
+  .insp{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px}
+  .insp .d{font-weight:700;color:var(--amber2)}
+  .insp .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+  .tag{font-size:12px;background:var(--surface2);border:1px solid var(--line);border-radius:99px;padding:3px 9px;color:var(--mut)}
+  .tag.g{color:var(--good)} .tag.b{color:var(--bad)}
+  .insp .note{color:var(--mut);font-size:14px;margin-top:7px;white-space:pre-wrap}
+  .back{color:var(--mut);background:transparent;border:0;padding:6px 0;cursor:pointer;font-size:15px}
+  /* form/modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.66);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+  @media(min-width:560px){.modal-bg{align-items:center}}
+  .modal{background:var(--surface);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:20px;max-width:560px;width:100%;max-height:92vh;overflow:auto}
+  @media(min-width:560px){.modal{border-radius:20px}}
+  .modal h3{margin:0 0 10px}
+  label{font-size:13px;color:var(--mut);display:block;margin:12px 0 5px}
+  input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px;font:inherit}
+  textarea{min-height:64px;resize:vertical}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg .opt{flex:1;min-width:74px;text-align:center;padding:11px 8px;border:1px solid var(--line);border-radius:12px;background:var(--bg);cursor:pointer;font-size:14px}
+  .seg .opt.sel{background:var(--amber);color:#1a160f;border-color:var(--amber);font-weight:700}
+  .row2{display:flex;gap:10px}.row2>*{flex:1}
+  .modrow{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+  .feats{font-size:14px;color:var(--mut);padding-left:18px}.feats li{margin:4px 0}
+  .err{color:var(--bad);font-size:13px;min-height:16px}.ok{color:var(--good);font-size:13px;min-height:16px}
+  .modal input.mono{font:12px/1.4 ui-monospace,Menlo,monospace}
+  footer{max-width:560px;margin:0 auto;color:var(--mut);font-size:12.5px;text-align:center;padding:18px;border-top:1px solid var(--line)}
+  footer a{color:var(--mut)}
+  .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:11px 16px;z-index:60;opacity:0;transition:.25s;font-size:14px}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">🐝 <b>Hive</b>Log</span>
+  <div class="grow"></div>
+  <button class="pill" onclick="exportCSV()">⤓ Export ✦</button>
+  <span class="pill" id="proPill" onclick="openLicense()">Pro</span>
+</header>
+
+<main id="app"></main>
+
+<div class="fab"><button class="primary" id="fab" onclick="fabAction()">＋</button></div>
+<footer>
+  HiveLog — beekeeping inspection records that live on your phone, not on paper. 100% private &amp; offline, no account.<br>
+  Free for unlimited hives &amp; inspections. ✦ Pro: CSV export, harvest &amp; varroa trends, multi-apiary.
+</footer>
+<div id="toast" class="toast"></div>
+
+<script>
+const PUBLIC_JWK = {"kty":"EC","x":"oYvRv1LKYRAtZQDDAZtPH2M256IPzhV3oyt-sMt-hMU","y":"_Gktn98tYrDTs5izhePiR_ksBYeVw0nQ-TOLrNKSwss","crv":"P-256"};
+const PAY = { wallet:"0xe339997037C7e1C81829fA3e110d3e82B4bDd48E", chain:"Base", token:"USDC", price:"9",
+  whop:"", contact:"https://github.com/AlexeySamosadov/hivelog/issues/new" };
+
+const $ = s => document.querySelector(s);
+let S = load() || { hives:[] };
+let pro = false;
+let view = { name:"home", hiveId:null };
+
+function load(){ try{ return JSON.parse(localStorage.getItem("hivelog")); }catch(e){ return null; } }
+function save(){ localStorage.setItem("hivelog", JSON.stringify(S)); }
+const today = () => new Date().toISOString().slice(0,10);
+const fmt = d => { try{ return new Date(d+"T00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"}); }catch(e){ return d; } };
+function hive(id){ return S.hives.find(h=>h.id===id); }
+function lastInsp(h){ return h.inspections&&h.inspections.length ? h.inspections[0] : null; }
+function daysSince(d){ return Math.floor((Date.now()-new Date(d+"T00:00").getTime())/86400000); }
+
+/* ---------- render ---------- */
+function render(){
+  $("#proPill").textContent = pro?"✓ Pro":"Pro"; $("#proPill").classList.toggle("pro",pro);
+  $("#fab").textContent = view.name==="home" ? "＋ Hive" : "＋ Inspection";
+  view.name==="home" ? renderHome() : renderHive();
+}
+function renderHome(){
+  let h = `<h1 class="hero">Your hives</h1><p class="sub">Tap a hive to log an inspection. Overdue hives are flagged.</p>`;
+  if(!S.hives.length){ h += `<div class="empty">No hives yet — tap <b>＋ Hive</b> to add your first colony. 🐝</div>`; }
+  else {
+    S.hives.forEach(hv=>{
+      const li = lastInsp(hv); const interval = hv.interval||9;
+      let badge = `<span class="due ok">new</span>`;
+      if(li){ const ds=daysSince(li.date); const over=ds>=interval; badge = `<span class="due ${over?"over":"ok"}">${over?("due "+(ds-interval>0?"+"+(ds-interval)+"d":"now")):("in "+(interval-ds)+"d")}</span>`; }
+      h += `<div class="card" onclick="openHive('${hv.id}')"><div class="ic">🐝</div>
+        <div class="body"><div class="name">${esc(hv.name)}</div>
+        <div class="meta">${hv.inspections?.length||0} inspections${li?(" · last "+fmt(li.date)):""}</div></div>${badge}</div>`;
+    });
+  }
+  $("#app").innerHTML = h;
+}
+function renderHive(){
+  const hv = hive(view.hiveId); if(!hv){ view.name="home"; return render(); }
+  let h = `<button class="back" onclick="goHome()">‹ All hives</button>
+    <h1 class="hero">${esc(hv.name)}</h1>
+    <p class="sub">${hv.inspections.length} inspections · reminder every <b>${hv.interval||9}</b> days <button class="pill" style="padding:3px 9px" onclick="setInterval2('${hv.id}')">change</button></p>`;
+  if(!hv.inspections.length){ h += `<div class="empty">No inspections yet — tap <b>＋ Inspection</b> after you open this hive.</div>`; }
+  hv.inspections.forEach(ins=>{
+    const tags=[];
+    tags.push(`<span class="tag ${ins.queen==="yes"?"g":(ins.queen==="no"?"b":"")}">👑 ${ins.queen||"?"}</span>`);
+    if(ins.eggs==="yes") tags.push(`<span class="tag g">eggs</span>`);
+    tags.push(`<span class="tag">brood: ${ins.brood||"?"}</span>`);
+    tags.push(`<span class="tag ${ins.temper==="hot"?"b":""}">${ins.temper||"calm"}</span>`);
+    tags.push(`<span class="tag">stores: ${ins.stores||"?"}</span>`);
+    if(ins.space==="yes") tags.push(`<span class="tag b">needs room</span>`);
+    if(ins.varroa) tags.push(`<span class="tag ${(+ins.varroa>=3)?"b":""}">varroa ${ins.varroa}</span>`);
+    if(ins.treatment) tags.push(`<span class="tag">💊 ${esc(ins.treatment)}</span>`);
+    h += `<div class="insp"><div class="d">${fmt(ins.date)} ${ins.weather?("· "+esc(ins.weather)):""}</div>
+      <div class="tags">${tags.join("")}</div>${ins.notes?`<div class="note">${esc(ins.notes)}</div>`:""}</div>`;
+  });
+  $("#app").innerHTML = h;
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function goHome(){ view={name:"home",hiveId:null}; render(); }
+function openHive(id){ view={name:"hive",hiveId:id}; render(); }
+function fabAction(){ view.name==="home"? addHive() : openInspection(); }
+
+function addHive(){
+  const n = prompt("Name this hive (e.g. 'Hive 1' or 'Queen Maja'):"); if(!n) return;
+  S.hives.push({ id:"h"+Date.now(), name:n.trim(), interval:9, inspections:[] }); save(); render();
+}
+function setInterval2(id){ const hv=hive(id); const v=prompt("Inspect every how many days?", hv.interval||9); const n=parseInt(v,10); if(n>0){ hv.interval=n; save(); render(); } }
+
+/* ---------- inspection form ---------- */
+let form = {};
+function openInspection(){
+  form = { date:today(), queen:"", eggs:"", brood:"good", temper:"calm", stores:"ok", space:"no", varroa:"", treatment:"", weather:"", notes:"" };
+  const seg = (key,opts)=>`<div class="seg" data-key="${key}">`+opts.map(o=>`<div class="opt${form[key]===o?" sel":""}" onclick="pick('${key}','${o}',this)">${o}</div>`).join("")+`</div>`;
+  const bg=document.createElement("div"); bg.className="modal-bg"; bg.id="inspBg";
+  bg.innerHTML = `<div class="modal"><h3>New inspection</h3>
+    <div class="row2"><div><label>Date</label><input type="date" id="f_date" value="${form.date}"></div>
+      <div><label>Weather</label><input id="f_weather" placeholder="sunny, 24°C"></div></div>
+    <label>Queen seen?</label>${seg("queen",["yes","no","unsure"])}
+    <label>Eggs / fresh larvae?</label>${seg("eggs",["yes","no"])}
+    <label>Brood pattern</label>${seg("brood",["good","spotty","none"])}
+    <label>Temperament</label>${seg("temper",["calm","normal","hot"])}
+    <label>Stores (honey/pollen)</label>${seg("stores",["low","ok","high"])}
+    <label>Needs more room / super?</label>${seg("space",["no","yes"])}
+    <div class="row2"><div><label>Varroa (mites/100 bees)</label><input id="f_varroa" inputmode="decimal" placeholder="e.g. 2"></div>
+      <div><label>Treatment given</label><input id="f_treat" placeholder="e.g. oxalic acid"></div></div>
+    <label>Notes / actions</label><textarea id="f_notes" placeholder="Added super, marked queen, combined with Hive 3…"></textarea>
+    <div class="modrow"><button class="primary" onclick="saveInspection()">Save inspection</button><button onclick="closeM('inspBg')">Cancel</button></div>
+  </div>`;
+  bg.onclick=e=>{ if(e.target===bg) closeM('inspBg'); };
+  document.body.appendChild(bg);
+}
+function pick(key,val,el){ form[key]=val; el.parentElement.querySelectorAll(".opt").forEach(o=>o.classList.remove("sel")); el.classList.add("sel"); }
+function saveInspection(){
+  const hv=hive(view.hiveId); if(!hv) return;
+  const ins={ id:"i"+Date.now(), date:$("#f_date").value||today(), weather:$("#f_weather").value.trim(),
+    queen:form.queen, eggs:form.eggs, brood:form.brood, temper:form.temper, stores:form.stores, space:form.space,
+    varroa:$("#f_varroa").value.trim(), treatment:$("#f_treat").value.trim(), notes:$("#f_notes").value.trim() };
+  hv.inspections.unshift(ins);
+  hv.inspections.sort((a,b)=>b.date.localeCompare(a.date));
+  save(); closeM('inspBg'); render(); toast("Inspection saved 🐝");
+}
+
+/* ---------- export (Pro) ---------- */
+function exportCSV(){
+  if(!pro) return openLicense();
+  const rows=[["hive","date","weather","queen","eggs","brood","temperament","stores","needs_room","varroa","treatment","notes"]];
+  S.hives.forEach(hv=>hv.inspections.forEach(i=>rows.push([hv.name,i.date,i.weather,i.queen,i.eggs,i.brood,i.temper,i.stores,i.space,i.varroa,i.treatment,(i.notes||"").replace(/\n/g," ")])));
+  const csv=rows.map(r=>r.map(c=>`"${String(c==null?"":c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"}); const u=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=u; a.download="hivelog-records.csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(u),3000);
+  toast("Records exported ✓");
+}
+
+/* ---------- licensing (offline ECDSA P-256) ---------- */
+function fromB(s){ s=s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4)s+="="; const b=atob(s); const a=new Uint8Array(b.length); for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a; }
+async function verifyLicense(str){ try{ const[p,sg]=str.trim().split("."); if(!p||!sg)return null;
+  const k=await crypto.subtle.importKey("jwk",PUBLIC_JWK,{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+  if(!await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},k,fromB(sg),fromB(p)))return null;
+  const pl=JSON.parse(new TextDecoder().decode(fromB(p))); if(pl.exp&&Math.floor(Date.now()/1000)>pl.exp)return{expired:true}; return pl; }catch(e){return null;} }
+async function applyLicense(str,silent){ const pl=await verifyLicense(str);
+  if(pl&&!pl.expired&&pl.plan==="pro"){ pro=true; localStorage.setItem("hivelog_license",str); render();
+    if(!silent){ const o=$("#licOk"); if(o)o.textContent="Unlocked — thank you 🐝"; setTimeout(()=>closeM('licBg'),800);} return true; }
+  if(!silent){ const e=$("#licErr"); if(e)e.textContent=pl&&pl.expired?"License expired.":"Invalid key."; } return false; }
+function openLicense(){ if(pro){ toast("Pro is active ✓"); return; }
+  const bg=document.createElement("div"); bg.className="modal-bg"; bg.id="licBg";
+  bg.innerHTML=`<div class="modal"><h3>HiveLog Pro — ${PAY.price} ${PAY.token}</h3>
+    <p class="sub" style="margin:0 0 8px">One-time, lifetime. The whole logbook stays free — Pro adds the record-keeping extras.</p>
+    <ul class="feats"><li>⤓ Export all records to CSV (treatment/compliance logs)</li><li>📈 Varroa &amp; harvest trends</li><li>🗂 Multiple apiaries</li></ul>
+    <p style="margin:8px 0 2px"><b>1.</b> Send <b>${PAY.price} ${PAY.token}</b> on <b>${PAY.chain}</b> to:</p>
+    <input class="mono" readonly value="${PAY.wallet}" onclick="this.select()" />
+    <button onclick="navigator.clipboard.writeText('${PAY.wallet}')">⧉ Copy address</button>
+    <p style="margin:10px 0 2px"><b>2.</b> Paste your payment tx hash + email:</p>
+    <input class="mono" id="txh" placeholder="0x… tx hash"/><input class="mono" id="email" placeholder="email"/>
+    <div class="err" id="licErr"></div><div class="ok" id="licOk"></div>
+    <div class="modrow"><button class="primary" onclick="reqKey()">Get my key</button><button onclick="closeM('licBg')">Close</button></div>
+    <details style="margin-top:10px"><summary style="color:var(--mut);cursor:pointer">Have a key?</summary>
+      <input class="mono" id="licKey" placeholder="paste license key"/><button onclick="applyLicense(document.getElementById('licKey').value,false)">Activate</button></details>
+  </div>`;
+  bg.onclick=e=>{ if(e.target===bg) closeM('licBg'); }; document.body.appendChild(bg);
+}
+function reqKey(){ const tx=($("#txh").value||"").trim(), em=($("#email").value||"").trim();
+  const url=PAY.contact+(PAY.contact.includes("?")?"&":"?")+"title="+encodeURIComponent("HiveLog Pro license request")+"&body="+encodeURIComponent("Payment tx hash: "+(tx||"0x...")+"\nEmail: "+em);
+  window.open(url,"_blank"); const o=$("#licOk"); if(o)o.textContent="Opened the request page — your key arrives once payment confirms."; }
+function closeM(id){ const b=document.getElementById(id); if(b)b.remove(); }
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2000); }
+
+/* init */
+render();
+(async()=>{ const s=localStorage.getItem("hivelog_license"); if(s) await applyLicense(s,true); })();
+</script>
+</body>
+</html>
